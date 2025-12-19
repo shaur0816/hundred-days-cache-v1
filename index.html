@@ -1,1586 +1,1141 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>百日築基｜每日紀錄</title>
-
-  <!-- PWA -->
-  <meta name="theme-color" content="#4455aa">
-  <link rel="manifest" href="manifest.json">
-  <!-- App icons（請放在 /icons 下） -->
-  <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
-  <link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png">
-
-  <!-- Chart.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+  <meta charset="utf-8">
+  <title>百日築基計劃</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <style>
-    :root {
-      --bg: #f3f5fb;
-      --card: #ffffff;
-      --accent: #4455aa;
-      --accent-soft: #e0e4ff;
-      --text: #222;
-      --muted: #666;
-      --border: #d5d9e8;
-      --danger: #d9534f;
-      --radius-lg: 16px;
-      --shadow-soft: 0 8px 20px rgba(0,0,0,0.06);
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: "Noto Sans TC","Microsoft JhengHei",system-ui,-apple-system,sans-serif;
-      background: radial-gradient(circle at top, #eef1ff 0, #f7f8fc 40%, #f3f5fb 100%);
-      color: var(--text);
-      -webkit-font-smoothing: antialiased;
-    }
-
-    .app {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      background: transparent;
-    }
-
-    .app-header {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      padding: 10px 14px 8px;
-      padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
-      background: linear-gradient(180deg, rgba(243,245,251,0.98), rgba(243,245,251,0.9));
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(213,217,232,0.8);
-    }
-
-    .header-title-row {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: 18px;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      display: flex;
-      align-items: baseline;
-      gap: 6px;
-    }
-
-    .badge {
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 999px;
-      background: var(--accent-soft);
-      color: var(--accent);
-      white-space: nowrap;
-    }
-
-    .subtitle {
-      margin: 4px 0 0;
-      font-size: 11px;
-      color: var(--muted);
-      line-height: 1.4;
-    }
-
-    .day-panel {
-      margin-top: 8px;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 10px 8px;
-      font-size: 12px;
-    }
-
-    .day-left {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      flex-wrap: wrap;
-    }
-
-    select#daySelect {
-      padding: 4px 10px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      font-size: 12px;
-      min-width: 92px;
-      background: #fff;
-    }
-
-    .day-buttons button {
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: #fff;
-      padding: 4px 8px;
-      font-size: 11px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 2px;
-    }
-
-    .day-buttons button:hover {
-      border-color: var(--accent);
-    }
-
-    .day-info {
-      font-size: 11px;
-      color: var(--muted);
-    }
-
-    .progress-pill {
-      margin-left: auto;
-      font-size: 11px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      background: #f0f3ff;
-      color: var(--accent);
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      white-space: nowrap;
-    }
-
-    .progress-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: #c2c8ff;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .progress-dot-inner {
-      position: absolute;
-      inset: 0;
-      transform-origin: left center;
-      background: linear-gradient(90deg, #7383ff, #57c4ff);
-      transform: scaleX(0);
-      border-radius: inherit;
-    }
-
-    .app-main {
-      flex: 1;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      padding: 10px 12px;
-      padding-bottom: 76px;
-    }
-
-    .screen {
-      display: none;
-      animation: fadeIn .2s ease-out;
-    }
-
-    .screen.active {
-      display: block;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(4px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .screen-title {
-      font-size: 14px;
-      font-weight: 600;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      margin: 0 0 6px;
-      color: #3a3f68;
-    }
-
-    .screen-subtitle {
-      font-size: 12px;
-      color: var(--muted);
-      margin: 0 0 10px;
-    }
-
-    .card {
-      background: var(--card);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-soft);
-      padding: 12px 14px 14px;
-      border: 1px solid rgba(255,255,255,0.8);
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .card + .card {
-      margin-top: 10px;
-    }
-
-    .card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      border: 1px solid transparent;
-      background: linear-gradient(135deg, rgba(115,131,255,.6), rgba(198,210,255,.4)) border-box;
-      -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
-      -webkit-mask-composite: xor;
-      mask-composite: exclude;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity .15s;
-    }
-
-    .card:hover::before {
-      opacity: 1;
-    }
-
-    .card-header {
-      display: flex;
-      align-items: baseline;
-      gap: 6px;
-      margin-bottom: 2px;
-    }
-
-    .card-title {
-      font-size: 16px;
-      font-weight: 600;
-      letter-spacing: .2em;
-    }
-
-    .card-tag {
-      font-size: 11px;
-      padding: 2px 7px;
-      border-radius: 999px;
-      background: #f5f6ff;
-      color: var(--muted);
-      white-space: nowrap;
-    }
-
-    .card-desc {
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.4;
-    }
-
-    .check-group {
-      margin-top: 4px;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      font-size: 13px;
-    }
-
-    label.row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      accent-color: var(--accent);
-      flex-shrink: 0;
-    }
-
-    input[type="number"],
-    input[type="text"],
-    textarea {
-      width: 100%;
-      padding: 5px 8px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      font-size: 12px;
-      font-family: inherit;
-      resize: vertical;
-      min-height: 32px;
-    }
-
-    textarea {
-      min-height: 60px;
-    }
-
-    input[type="number"]:focus,
-    input[type="text"]:focus,
-    textarea:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 1px rgba(68,85,170,0.18);
-    }
-
-    .note-label {
-      margin-top: 4px;
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    /* 今日總覽 */
-    .summary-list {
-      list-style: none;
-      margin: 8px 0 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .summary-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.96);
-      border: 1px solid rgba(213,217,232,0.9);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.03);
-      font-size: 13px;
-    }
-
-    .summary-dot {
-      width: 16px;
-      height: 16px;
-      border-radius: 999px;
-      border: 2px solid #d0d4ec;
-      position: relative;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-
-    .summary-dot-inner {
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at 30% 0, #fff 0, #73d1ff 30%, #7383ff 100%);
-      opacity: 0;
-      transition: opacity .15s;
-    }
-
-    .summary-item.done .summary-dot-inner {
-      opacity: 1;
-    }
-
-    .summary-item-label {
-      flex: 1;
-    }
-
-    .summary-item-label strong {
-      font-weight: 600;
-      margin-right: 4px;
-    }
-
-    .summary-item-status {
-      font-size: 11px;
-      color: var(--muted);
-      white-space: nowrap;
-    }
-
-    .summary-note {
-      margin-top: 10px;
-    }
-
-    /* 底部導覽列 */
-    .app-nav {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 30;
-      padding-bottom: env(safe-area-inset-bottom, 0px);
-      background: rgba(255,255,255,0.98);
-      border-top: 1px solid rgba(213,217,232,0.95);
-      box-shadow: 0 -4px 18px rgba(0,0,0,0.08);
-    }
-
-    .nav-inner {
-      max-width: 820px;
-      margin: 0 auto;
-      display: flex;
-      align-items: stretch;
-      justify-content: space-between;
-      padding: 4px 4px;
-      gap: 2px;
-    }
-
-    .nav-btn {
-      flex: 1;
-      border: none;
-      background: transparent;
-      padding: 3px 2px 2px;
-      border-radius: 999px;
-      font-size: 10px;
-      color: var(--muted);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      cursor: pointer;
-      position: relative;
-    }
-
-    .nav-btn-icon {
-      width: 26px;
-      height: 26px;
-      border-radius: 999px;
-      background: #f2f3ff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 15px;
-    }
-
-    .nav-btn span.label {
-      line-height: 1.1;
-    }
-
-    .nav-btn.active .nav-btn-icon {
-      background: linear-gradient(135deg,#7383ff,#57c4ff);
-      color: #fff;
-      box-shadow: 0 4px 12px rgba(87,196,255,0.5);
-    }
-
-    .nav-btn.active {
-      color: #2f3466;
-      font-weight: 600;
-    }
-
-    .nav-btn-indicator {
-      position: absolute;
-      bottom: -1px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 14px;
-      height: 3px;
-      border-radius: 999px;
-      background: linear-gradient(90deg,#7383ff,#57c4ff);
-      opacity: 0;
-      transition: opacity .15s;
-    }
-
-    .nav-btn.active .nav-btn-indicator {
-      opacity: 1;
-    }
-
-    /* 匯出 / 設定 */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: #fff;
-      font-size: 12px;
-      padding: 6px 12px;
-      cursor: pointer;
-    }
-
-    .btn.primary {
-      background: linear-gradient(135deg,#7383ff,#57c4ff);
-      color: #fff;
-      border: none;
-      box-shadow: 0 4px 12px rgba(87,196,255,0.5);
-    }
-
-    .btn.danger {
-      border-color: var(--danger);
-      color: var(--danger);
-      background: #fff4f4;
-    }
-
-    .btn + .btn {
-      margin-left: 6px;
-    }
-
-    .btn-row {
-      margin-top: 10px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    .hint-text {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 6px;
-      line-height: 1.4;
-    }
-
-    footer {
-      text-align: center;
-      font-size: 10px;
-      color: var(--muted);
-      margin-top: 10px;
-      margin-bottom: 6px;
-    }
-
-    /* 圖表頁 */
-    .chart-card {
-      background: var(--card);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-soft);
-      padding: 10px 10px 12px;
-      border: 1px solid rgba(255,255,255,0.8);
-    }
-
-    .chart-card + .chart-card {
-      margin-top: 10px;
-    }
-
-    .chart-title {
-      font-size: 13px;
-      font-weight: 600;
-      margin: 0 0 4px;
-      color: #3a3f68;
-    }
-
-    .chart-subtitle {
-      font-size: 11px;
-      color: var(--muted);
-      margin: 0 0 6px;
-    }
-
-    .chart-wrapper {
-      width: 100%;
-      max-height: 260px;
-    }
-
-    .chart-wrapper canvas {
-      width: 100%;
-      height: 220px;
-    }
-
-    .chart-meta {
-      margin-top: 6px;
-      font-size: 11px;
-      color: var(--muted);
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px 10px;
-    }
-
-    .chart-meta span strong {
-      color: #4455aa;
-    }
-
-    @media (min-width: 768px) {
-      .app-main {
-        max-width: 820px;
-        margin: 0 auto;
+    :root{
+      /* 暖陽橘主題 */
+      --bg:#FFF9E6;
+      --card:#FFFFFF;
+      --accent:#FFA85C;
+      --accent-soft:#FFE1C2;
+      --accent-strong:#E85C47;
+      --text:#3b3b3b;
+      --muted:#777;
+      --green:#31A36C;
+      --yellow-main:#FFD85A;
+      --yellow-dark:#FFC938;
+      --shadow:0 8px 20px rgba(0,0,0,.08);
+      --radius-lg:18px;
+    }
+    *{box-sizing:border-box;}
+    html,body{
+      margin:0;
+      padding:0;
+      font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+      background:radial-gradient(circle at top,#FFEBD2 0,var(--bg) 45%,#FFFFFF 100%);
+      color:var(--text);
+    }
+    body{
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+      min-height:100vh;
+    }
+    .app{
+      width:100%;
+      max-width:520px;
+      padding:16px 12px 32px;
+      animation:fadeIn .6s ease-out;
+    }
+    @media(min-width:768px){
+      .app{
+        padding:24px 0 40px;
       }
+    }
+
+    /* header */
+    .header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      margin-bottom:12px;
+    }
+    .title-wrap{
+      flex:1;
+    }
+    .title{
+      font-size:26px;
+      font-weight:700;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      color:var(--accent-strong);
+    }
+    .subtitle{
+      font-size:14px;
+      color:var(--muted);
+    }
+    .day-nav{
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      gap:4px;
+    }
+    .day-display{
+      font-size:18px;
+      font-weight:600;
+      padding:4px 10px;
+      border-radius:999px;
+      background:var(--accent-soft);
+      color:var(--accent-strong);
+    }
+    .day-buttons{
+      display:flex;
+      gap:4px;
+    }
+    .nav-btn{
+      border:none;
+      border-radius:999px;
+      padding:4px 10px;
+      font-size:16px;
+      background:#ffffffaa;
+      box-shadow:0 0 0 1px #FFD3A3;
+      cursor:pointer;
+      transition:transform .1s,box-shadow .1s,background .1s;
+    }
+    .nav-btn:active{
+      transform:scale(.96);
+      box-shadow:none;
+      background:#FFE6C8;
+    }
+
+    /* summary */
+    .summary-card{
+      background:linear-gradient(135deg,#FFE1C2,#FFF1D7);
+      border-radius:var(--radius-lg);
+      padding:12px 14px;
+      box-shadow:var(--shadow);
+      margin-bottom:8px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+    }
+    .summary-main{
+      font-size:18px;
+      font-weight:600;
+      color:#C0522F;
+    }
+    .summary-sub{
+      font-size:14px;
+      color:#8a5a3a;
+    }
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:13px;
+      background:#ffffffdd;
+      color:#C0522F;
+      box-shadow:0 0 0 1px #FFD3A3;
+    }
+
+    .full-complete-note{
+      text-align:center;
+      font-size:15px;
+      color:var(--green);
+      font-weight:600;
+      margin-bottom:12px;
+      display:none;
+    }
+
+    /* category cards */
+    .category-list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-bottom:16px;
+    }
+    .category-card{
+      position:relative;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      background:var(--card);
+      border-radius:var(--radius-lg);
+      box-shadow:var(--shadow);
+      cursor:pointer;
+      border:2px solid transparent;
+      transition:transform .12s,box-shadow .12s,border-color .12s,background .12s;
+    }
+    .category-card:active{
+      transform:scale(.97);
+      box-shadow:0 4px 12px rgba(0,0,0,.06);
+      background:#FFF7EA;
+    }
+    .category-card.done{
+      border-color:var(--green);
+    }
+    .category-card.done::after{
+      content:"已完成";
+      position:absolute;
+      right:10px;
+      top:8px;
+      font-size:12px;
+      padding:2px 8px;
+      border-radius:999px;
+      background:var(--green);
+      color:#fff;
+    }
+    .icon-wrap{
+      width:54px;
+      height:54px;
+      border-radius:16px;
+      background:var(--accent-soft);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-shrink:0;
+    }
+    .icon{
+      width:34px;
+      height:34px;
+      stroke:var(--accent-strong);
+      fill:none;
+      stroke-width:2;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+    }
+    .category-text{
+      flex:1;
+    }
+    .category-title{
+      font-size:18px;
+      font-weight:600;
+      margin-bottom:2px;
+      color:#C0522F;
+    }
+    .category-desc{
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    .status-dot{
+      width:18px;
+      height:18px;
+      border-radius:999px;
+      border:2px solid #ddd;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-shrink:0;
+    }
+    .status-dot-inner{
+      width:10px;
+      height:10px;
+      border-radius:999px;
+      background:#ddd;
+      transition:background .15s,transform .15s;
+    }
+    .category-card.done .status-dot{
+      border-color:var(--green);
+    }
+    .category-card.done .status-dot-inner{
+      background:var(--green);
+      transform:scale(1.1);
+    }
+
+    /* footer buttons */
+    .footer-actions{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-bottom:10px;
+    }
+    .primary-btn{
+      border:none;
+      border-radius:999px;
+      padding:12px 18px;
+      font-size:18px;
+      font-weight:600;
+      background:linear-gradient(135deg,var(--yellow-main),var(--yellow-dark));
+      color:#5A4300;
+      cursor:pointer;
+      box-shadow:0 6px 16px rgba(0,0,0,.18);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      transition:transform .12s,box-shadow .12s;
+    }
+    .primary-btn:active{
+      transform:translateY(1px);
+      box-shadow:0 2px 8px rgba(0,0,0,.25);
+    }
+    .secondary-btn{
+      border-radius:999px;
+      padding:10px 16px;
+      font-size:16px;
+      border:none;
+      background:#ffffffd8;
+      box-shadow:var(--shadow);
+      cursor:pointer;
+      color:#844122;
+    }
+
+    .hint{
+      font-size:12px;
+      color:var(--muted);
+      text-align:center;
+    }
+
+    /* summary board */
+    .day-summary-section{
+      margin-top:12px;
+      padding:12px 12px 16px;
+      border-radius:var(--radius-lg);
+      background:#FFF7EA;
+      box-shadow:var(--shadow);
+      border:1px solid #FFD3A3;
+    }
+    .day-summary-title{
+      font-size:18px;
+      font-weight:600;
+      margin-bottom:6px;
+      display:flex;
+      align-items:center;
+      gap:4px;
+      color:#C0522F;
+    }
+    #daySummary{
+      width:100%;
+      min-height:200px;
+      font-size:15px;
+      border-radius:12px;
+      border:2px solid #FFC27A;
+      padding:8px;
+      resize:vertical;
+      font-family:inherit;
+      line-height:1.5;
+    }
+
+    /* detail panel (tasks) */
+    .panel{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.25);
+      display:flex;
+      align-items:flex-end;
+      justify-content:center;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .2s;
+      z-index:20;
+    }
+    .panel.show{
+      opacity:1;
+      pointer-events:auto;
+    }
+    .panel-inner{
+      width:100%;
+      max-width:520px;
+      background:#fff;
+      border-radius:20px 20px 0 0;
+      padding:14px 16px 22px;
+      box-shadow:0 -6px 20px rgba(0,0,0,.18);
+      transform:translateY(100%);
+      animation:slideUp .25s ease-out forwards;
+    }
+    .panel-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:8px;
+    }
+    .panel-title{
+      font-size:20px;
+      font-weight:700;
+      color:#C0522F;
+    }
+    .panel-close{
+      border:none;
+      background:none;
+      font-size:26px;
+      line-height:1;
+      padding:4px 8px;
+      cursor:pointer;
+    }
+    .tasks-list{
+      list-style:none;
+      margin:6px 0 14px;
+      padding:0;
+    }
+    .tasks-list li{
+      padding:8px 4px;
+      border-bottom:1px dashed #eee;
+      display:flex;
+      align-items:flex-start;
+      gap:8px;
+    }
+    .tasks-list input[type="checkbox"]{
+      width:22px;
+      height:22px;
+      margin-top:2px;
+      flex-shrink:0;
+    }
+    .tasks-list label{
+      font-size:16px;
+    }
+    .tasks-list input[type="number"]{
+      width:90px;
+      font-size:16px;
+      padding:4px 6px;
+      border-radius:8px;
+      border:1px solid #ddd;
+      font-family:inherit;
+    }
+    .tasks-list .num-label{
+      font-size:16px;
+    }
+    .tasks-list textarea{
+      flex:1;
+      font-size:15px;
+      border-radius:10px;
+      border:1px solid #ddd;
+      padding:6px;
+      min-height:60px;
+      resize:vertical;
+      font-family:inherit;
+    }
+    .panel-save-btn{
+      width:100%;
+      margin-top:4px;
+    }
+
+    /* toast */
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:16px;
+      transform:translateX(-50%);
+      background:#333;
+      color:#fff;
+      font-size:14px;
+      padding:8px 14px;
+      border-radius:999px;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .2s,transform .2s;
+      z-index:40;
+    }
+    .toast.show{
+      opacity:1;
+      transform:translate(-50%,-4px);
+    }
+
+    /* 滾動條（Chrome）小橘色 */
+    textarea::-webkit-scrollbar{
+      width:8px;
+    }
+    textarea::-webkit-scrollbar-thumb{
+      background:#FFC27A;
+      border-radius:4px;
+    }
+    textarea::-webkit-scrollbar-track{
+      background:#FFF3DF;
+    }
+
+    /* animations */
+    @keyframes fadeIn{
+      from{opacity:0; transform:translateY(6px);}
+      to{opacity:1; transform:translateY(0);}
+    }
+    @keyframes slideUp{
+      from{transform:translateY(100%);}
+      to{transform:translateY(0);}
     }
   </style>
 </head>
 <body>
-<div class="app">
-  <!-- Header -->
-  <header class="app-header">
-    <div class="header-title-row">
-      <h1>
-        百日築基
-        <span class="badge">內明成就 100 Days</span>
-      </h1>
-      <div class="progress-pill">
-        <div class="progress-dot">
-          <div class="progress-dot-inner" id="progressDotInner"></div>
+  <div class="app" id="app">
+    <header class="header">
+      <div class="title-wrap">
+        <div class="title">
+          <span>🌸 百日築基計劃</span>
         </div>
-        <span id="progressText">0 / 6</span>
+        <div class="subtitle">身・語・意 六向練習，100 天一起打卡</div>
       </div>
-    </div>
-    <p class="subtitle">
-      忙碌中也給自己一點點「向內」的時間。每天記錄六大項：出離心、菩提心、身、語、意、下座。
-    </p>
-    <div class="day-panel">
-      <div class="day-left">
-        <span style="font-size:11px;">天數：</span>
-        <select id="daySelect"></select>
+      <div class="day-nav">
+        <div class="day-display">
+          Day <span id="dayNumber">1</span> / 100
+        </div>
         <div class="day-buttons">
-          <button type="button" id="prevDayBtn">← 前一天</button>
-          <button type="button" id="nextDayBtn">後一天 →</button>
+          <button class="nav-btn" id="prevDayBtn">←</button>
+          <button class="nav-btn" id="nextDayBtn">→</button>
         </div>
       </div>
-      <div class="day-info" id="dayInfo"></div>
+    </header>
+
+    <section class="summary-card" aria-label="今日總結">
+      <div>
+        <div class="summary-main">
+          今日完成進度：<span id="todayDone">0</span> / 6
+        </div>
+        <div class="summary-sub">
+          一點一滴累積，讓心更安住。
+        </div>
+      </div>
+      <div class="chip">
+        🔥 已連續 <span id="streakDays">0</span> 天
+      </div>
+    </section>
+
+    <div class="full-complete-note" id="fullCompleteNote">
+      ✅ 今日全部完成，辛苦了！
     </div>
-  </header>
 
-  <!-- Main content -->
-  <main class="app-main">
-    <!-- 今日總覽 -->
-    <section class="screen screen-home active" data-screen="home">
-      <h2 class="screen-title">今日總覽</h2>
-      <p class="screen-subtitle">
-        六大項完成度以「項目」計算：任一子項有打勾 → 該大項完成。達成 6 / 6 就是今日滿分。
-      </p>
+    <main>
+      <section class="category-list" id="categoryList">
+        <!-- cards injected by JS -->
+      </section>
 
-      <ul class="summary-list">
-        <li class="summary-item" data-summary="chuli">
-          <div class="summary-dot"><div class="summary-dot-inner"></div></div>
-          <div class="summary-item-label">
-            <strong>出離心</strong><span>思維無常，記得生命有限。</span>
-          </div>
-          <div class="summary-item-status">未完成</div>
-        </li>
-        <li class="summary-item" data-summary="putixin">
-          <div class="summary-dot"><div class="summary-dot-inner"></div></div>
-          <div class="summary-item-label">
-            <strong>菩提心</strong><span>願一切眾生離苦得樂。</span>
-          </div>
-          <div class="summary-item-status">未完成</div>
-        </li>
-        <li class="summary-item" data-summary="shen">
-          <div class="summary-dot"><div class="summary-dot-inner"></div></div>
-          <div class="summary-item-label">
-            <strong>身</strong><span>運動、好好睡、好好吃。</span>
-          </div>
-          <div class="summary-item-status">未完成</div>
-        </li>
-        <li class="summary-item" data-summary="yu">
-          <div class="summary-dot"><div class="summary-dot-inner"></div></div>
-          <div class="summary-item-label">
-            <strong>語</strong><span>少造口業，多說好話。</span>
-          </div>
-          <div class="summary-item-status">未完成</div>
-        </li>
-        <li class="summary-item" data-summary="yi">
-          <div class="summary-dot"><div class="summary-dot-inner"></div></div>
-          <div class="summary-item-label">
-            <strong>意</strong><span>定中有慧，覺察念頭。</span>
-          </div>
-          <div class="summary-item-status">未完成</div>
-        </li>
-        <li class="summary-item" data-summary="xiazuo">
-          <div class="summary-dot"><div class="summary-dot-inner"></div></div>
-          <div class="summary-item-label">
-            <strong>下座</strong><span>生活中也保持清明。</span>
-          </div>
-          <div class="summary-item-status">未完成</div>
-        </li>
+      <section class="footer-actions">
+        <button class="secondary-btn" id="resetDayBtn">
+          🔁 清除本日紀錄（重來）
+        </button>
+        <p class="hint">
+          資料會存到你的裝置（LocalStorage），關掉網頁也會保留。
+        </p>
+      </section>
+
+      <section class="day-summary-section">
+        <div class="day-summary-title">
+          📝 今日摘要
+        </div>
+        <textarea id="daySummary" placeholder="這裡會自動整理今天六項的完成情況，也可以自行修改補充。"></textarea>
+      </section>
+    </main>
+  </div>
+
+  <!-- 詳細任務面板 -->
+  <div class="panel" id="detailPanel" aria-hidden="true">
+    <div class="panel-inner">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span id="detailTitle">出離心</span>・今日練習
+        </div>
+        <button class="panel-close" id="closePanelBtn" aria-label="關閉">×</button>
+      </div>
+      <ul class="tasks-list" id="tasksList">
+        <!-- tasks injected -->
       </ul>
-
-      <div class="summary-note">
-        <div class="note-label">今日整體小結（選填）：</div>
-        <textarea data-field="summary_note" placeholder="想給自己的今日一句話、亮點或需要調整的地方。"></textarea>
-      </div>
-
-      <p class="hint-text">
-        小提醒：下方 Tab 可切換到「出離/菩提」、「身」、「語＆意」、「下座/匯出」、「圖表」。所有紀錄都會自動儲存到本機瀏覽器，不會上傳到任何伺服器。
-      </p>
-    </section>
-
-    <!-- 出離心 + 菩提心 -->
-    <section class="screen" data-screen="chuli">
-      <h2 class="screen-title">出離 / 菩提</h2>
-      <p class="screen-subtitle">
-        以六個生活節點提醒自己：起床、上座前、三餐前、睡前。也可以依照自己的作息調整。
-      </p>
-
-      <!-- 出離心 -->
-      <article class="card">
-        <div class="card-header">
-          <div class="card-title">出離心</div>
-          <div class="card-tag">思維無常六次</div>
-        </div>
-        <p class="card-desc">
-          每日思維「一切無常，生命有限」，至少六次。可依起床、上座前、三餐前、睡前等節點提醒自己。
-        </p>
-        <div class="check-group">
-          <label class="row">
-            <input type="checkbox" data-field="chuli_morningWake_chk">
-            <span>起床後</span>
-          </label>
-          <label class="row">
-            <input type="checkbox" data-field="chuli_beforeMedit_chk">
-            <span>上座前</span>
-          </label>
-          <label class="row">
-            <input type="checkbox" data-field="chuli_beforeBreakfast_chk">
-            <span>早餐前</span>
-          </label>
-          <label class="row">
-            <input type="checkbox" data-field="chuli_beforeLunch_chk">
-            <span>午餐前</span>
-          </label>
-          <label class="row">
-            <input type="checkbox" data-field="chuli_beforeDinner_chk">
-            <span>晚餐前</span>
-          </label>
-          <label class="row">
-            <input type="checkbox" data-field="chuli_beforeSleep_chk">
-            <span>睡前</span>
-          </label>
-        </div>
-        <div class="note-label">今天在出離心上的體會（可略）：</div>
-        <textarea data-field="chuli_note" placeholder="例如：更清楚感受到時間不等人，所以少滑了一次手機。"></textarea>
-      </article>
-
-      <!-- 菩提心 -->
-      <article class="card">
-        <div class="card-header">
-          <div class="card-title">菩提心</div>
-          <div class="card-tag">念六道父母</div>
-        </div>
-        <p class="card-desc">
-          每日思維一切眾生如父母，仍在輪迴受苦，願以修行利益他們，同樣至少六次。
-        </p>
-        <div class="check-group">
-          <label class="row">
-            <input type="checkbox" data-field="putixin_morningWake_chk">
-            <span>起床後</span>
-          </label>
-          <label class="row">
-            <input type="checkbox" data-field="putixin_beforeMedit_chk">
-            <span>上座前</span>
-          </label>
-          <label class="row">
-            <input type="checkbox" data-field="putixin_beforeBreakfast_chk">
-            <span>早餐前</span>
-          </label>
-          <label class="row">
-            <input type="checkbox" data-field="putixin_beforeLunch_chk">
-            <span>午餐前</span>
-          </label>
-          <label class="row">
-            <input type="checkbox" data-field="putixin_beforeDinner_chk">
-            <span>晚餐前</span>
-          </label>
-          <label class="row">
-            <input type="checkbox" data-field="putixin_beforeSleep_chk">
-            <span>睡前</span>
-          </label>
-        </div>
-        <div class="note-label">今天菩提心的發願／感動：</div>
-        <textarea data-field="putixin_note" placeholder="例如：想到同事也在壓力中，希望一起離苦得樂。"></textarea>
-      </article>
-    </section>
-
-    <!-- 身 -->
-    <section class="screen" data-screen="shen">
-      <h2 class="screen-title">身</h2>
-      <p class="screen-subtitle">
-        身體是修行的工具。可參考：慢跑二十分鐘、重訓、每日一千步、少油炸、十點前睡、曬太陽十分鐘等。
-      </p>
-
-      <article class="card">
-        <div class="card-header">
-          <div class="card-title">身體照顧</div>
-          <div class="card-tag">運動．飲食．作息．曬太陽</div>
-        </div>
-        <p class="card-desc">
-          今天有做到哪些？只要任一項打勾，就算「身」這一大項完成。
-        </p>
-        <div class="check-group">
-          <label class="row">
-            <input type="checkbox" data-field="shen_run20_chk">
-            <span>運動 EX1：早/晚慢跑 ≥ 20 分鐘</span>
-          </label>
-          <label class="row">
-            <input type="checkbox" data-field="shen_training_chk">
-            <span>運動 EX2：重訓 / 其他運動</span>
-          </label>
-          <label class="row">
-            <input type="checkbox" data-field="shen_steps_chk">
-            <span>運動 EX3：步行 ≥ 1000 步</span>
-          </label>
-          <label class="row">
-            <input type="checkbox" data-field="shen_food_chk">
-            <span>飲食：少油炸、少宵夜</span>
-          </label>
-          <label class="row">
-            <input type="checkbox" data-field="shen_sleepEarly_chk">
-            <span>作息：晚上 10 點前入睡</span>
-          </label>
-          <label class="row">
-            <input type="checkbox" data-field="shen_sun_chk">
-            <span>曬太陽 ≥ 10 分鐘（10–15 點）</span>
-          </label>
-        </div>
-        <div class="note-label">今天身體照顧的紀錄（可填實際運動內容）：</div>
-        <textarea data-field="shen_note" placeholder="例如：晚上散步 30 分鐘，精神變好很多。"></textarea>
-      </article>
-    </section>
-
-    <!-- 語 + 意 -->
-    <section class="screen" data-screen="yu">
-      <h2 class="screen-title">語 &amp; 意</h2>
-      <p class="screen-subtitle">
-        語：清淨語言、不造口業。意：定與慧，透過禪修與學習，慢慢看清自己的心。
-      </p>
-
-      <!-- 語 -->
-      <article class="card">
-        <div class="card-header">
-          <div class="card-title">語</div>
-          <div class="card-tag">五大淨化法．安那般那</div>
-        </div>
-        <p class="card-desc">
-          練習清淨語言，不造口業；搭配念誦、持咒或安那般那呼吸等方法，淨化身心。
-        </p>
-        <div class="check-group">
-          <label class="row">
-            <input type="checkbox" data-field="yu_purify_chk">
-            <span>今日刻意練習「五大淨化法」</span>
-          </label>
-          <label class="row">
-            <span>五大淨化法共練幾次？</span>
-          </label>
-          <input type="number" min="0" step="1" data-field="yu_purify_times" placeholder="例如：3">
-          <label class="row" style="margin-top:4px;">
-            <input type="checkbox" data-field="yu_anapana_chk">
-            <span>安那般那（出入息念）練習</span>
-          </label>
-          <label class="row">
-            <span>安那般那共練幾分鐘？</span>
-          </label>
-          <input type="number" min="0" step="1" data-field="yu_anapana_minutes" placeholder="例如：15">
-        </div>
-        <div class="note-label">今天說話上有留意到什麼？</div>
-        <textarea data-field="yu_note" placeholder="例如：忍住沒有抱怨，把話換成建議。"></textarea>
-      </article>
-
-      <!-- 意 -->
-      <article class="card">
-        <div class="card-header">
-          <div class="card-title">意</div>
-          <div class="card-tag">定．慧</div>
-        </div>
-        <p class="card-desc">
-          「定」：上座禪修／觀息；「慧」：複習法義、整理筆記、看到新的觀點或轉念。
-        </p>
-        <div class="check-group">
-          <label class="row">
-            <input type="checkbox" data-field="yi_medit_chk">
-            <span>今天有正式上座禪修</span>
-          </label>
-          <label class="row">
-            <span>上座共幾小時？</span>
-          </label>
-          <input type="number" min="0" step="0.25" data-field="yi_medit_hours" placeholder="例如：0.5（30 分鐘）">
-          <label class="row" style="margin-top:4px;">
-            <input type="checkbox" data-field="yi_wisdom_chk">
-            <span>慧：複習知見 / 讀書 / 上課</span>
-          </label>
-        </div>
-        <div class="note-label">今天有什麼新的發現或轉念？</div>
-        <textarea data-field="yi_note" placeholder="例如：察覺到煩躁其實來自怕被否定。"></textarea>
-      </article>
-    </section>
-
-    <!-- 下座 + 匯出 -->
-    <section class="screen" data-screen="more">
-      <h2 class="screen-title">下座 &amp; 匯出</h2>
-      <p class="screen-subtitle">
-        下座中也維持覺知：使用手機、工作、與人互動，都盡量帶著清明。這裡也可以匯出全部紀錄做備份。
-      </p>
-
-      <!-- 下座 -->
-      <article class="card">
-        <div class="card-header">
-          <div class="card-title">下座</div>
-          <div class="card-tag">生活實修</div>
-        </div>
-        <p class="card-desc">
-          下座時維持清明。範例：每日手機打發時間低於一小時、工作中保持覺知、不被情緒牽著走。
-        </p>
-        <div class="check-group">
-          <label class="row">
-            <input type="checkbox" data-field="xiazuo_phone_chk">
-            <span>今天滑手機打發時間低於 1 小時</span>
-          </label>
-          <label class="row">
-            <span>估計實際滑手機打發的時間（分鐘）：</span>
-          </label>
-          <input type="number" min="0" step="5" data-field="xiazuo_phone_minutes" placeholder="例如：35">
-          <label class="row" style="margin-top:4px;">
-            <input type="checkbox" data-field="xiazuo_mindfulWork_chk">
-            <span>工作／家務時有刻意保持覺知</span>
-          </label>
-        </div>
-        <div class="note-label">下座生活中的觀察：</div>
-        <textarea data-field="xiazuo_note" placeholder="例如：排隊時沒有滑手機，改觀察呼吸。"></textarea>
-      </article>
-
-      <!-- 匯出 / 重置 -->
-      <article class="card" style="margin-top:12px;">
-        <div class="card-header">
-          <div class="card-title">匯出與備份</div>
-        </div>
-        <p class="card-desc">
-          匯出的是「全部 100 天」的紀錄（含尚未填寫的天數會留空）。你可以用來備份、分析或印出紙本。
-        </p>
-        <div class="btn-row">
-          <button type="button" class="btn primary" id="exportJsonBtn">下載 JSON 備份</button>
-          <button type="button" class="btn" id="exportCsvBtn">下載 CSV（Excel）</button>
-        </div>
-        <p class="hint-text">
-          JSON 適合作為完整備份；CSV 可以用 Excel 或 Google 試算表打開，看長期的趨勢。
-        </p>
-        <hr style="margin:10px 0;border:none;border-top:1px dashed #e0e2f0;">
-        <div class="btn-row">
-          <button type="button" class="btn" id="resetDayBtn">清除「本日」紀錄</button>
-          <button type="button" class="btn danger" id="resetAllBtn">清除全部 100 天紀錄</button>
-        </div>
-        <p class="hint-text">
-          ⚠️ 清除後資料無法復原，請先做好匯出備份再操作。
-        </p>
-      </article>
-
-      <footer>
-        百日築基只是框架，最重要的是：即使很忙，每天也願意往內在穩定與清明靠近一點點。🌱
-      </footer>
-    </section>
-
-    <!-- 圖表頁 -->
-    <section class="screen" data-screen="charts">
-      <h2 class="screen-title">圖表</h2>
-      <p class="screen-subtitle">
-        用視覺化來看自己的百日歷程：每天完成幾項？六大項裡，哪一項是你的強項與需要加強的地方？
-      </p>
-
-      <div class="chart-card">
-        <h3 class="chart-title">每日完成度（0–6 項）</h3>
-        <p class="chart-subtitle">橫軸是 Day1–Day100，縱軸是當天完成的大項數量（最多 6）。</p>
-        <div class="chart-wrapper">
-          <canvas id="dailyChart"></canvas>
-        </div>
-        <div class="chart-meta" id="dailyChartMeta"></div>
-      </div>
-
-      <div class="chart-card">
-        <h3 class="chart-title">六大項完成率</h3>
-        <p class="chart-subtitle">統計目前已填寫紀錄的天數中，各項目完成的比例。</p>
-        <div class="chart-wrapper">
-          <canvas id="categoryChart"></canvas>
-        </div>
-        <div class="chart-meta" id="categoryChartMeta"></div>
-      </div>
-    </section>
-  </main>
-
-  <!-- Bottom nav -->
-  <nav class="app-nav">
-    <div class="nav-inner">
-      <button class="nav-btn active" data-target="home">
-        <div class="nav-btn-icon">📅</div>
-        <span class="label">今日</span>
-        <div class="nav-btn-indicator"></div>
-      </button>
-      <button class="nav-btn" data-target="chuli">
-        <div class="nav-btn-icon">🧭</div>
-        <span class="label">出離/菩提</span>
-        <div class="nav-btn-indicator"></div>
-      </button>
-      <button class="nav-btn" data-target="shen">
-        <div class="nav-btn-icon">🧘</div>
-        <span class="label">身</span>
-        <div class="nav-btn-indicator"></div>
-      </button>
-      <button class="nav-btn" data-target="yu">
-        <div class="nav-btn-icon">🗣️</div>
-        <span class="label">語＆意</span>
-        <div class="nav-btn-indicator"></div>
-      </button>
-      <button class="nav-btn" data-target="more">
-        <div class="nav-btn-icon">🏡</div>
-        <span class="label">下座/匯出</span>
-        <div class="nav-btn-indicator"></div>
-      </button>
-      <button class="nav-btn" data-target="charts">
-        <div class="nav-btn-icon">📈</div>
-        <span class="label">圖表</span>
-        <div class="nav-btn-indicator"></div>
+      <button class="primary-btn panel-save-btn" id="saveTasksBtn">
+        💾 儲存這一項
       </button>
     </div>
-  </nav>
-</div>
+  </div>
 
-<script>
-(function () {
-  const TOTAL_DAYS = 100;
-  const STORAGE_KEY = "hundredDaysPlan_v2";
-  const LAST_DAY_KEY = "hundredDaysPlan_lastDay_v2";
+  <!-- toast -->
+  <div class="toast" id="toast">已儲存</div>
+  <script>
+    // ===== 資料設定 =====
+    const STORAGE_KEY = 'hundredBasePlan_v3';
 
-  const daySelect = document.getElementById("daySelect");
-  const prevBtn = document.getElementById("prevDayBtn");
-  const nextBtn = document.getElementById("nextDayBtn");
-  const dayInfo = document.getElementById("dayInfo");
-  const exportJsonBtn = document.getElementById("exportJsonBtn");
-  const exportCsvBtn = document.getElementById("exportCsvBtn");
-  const resetDayBtn = document.getElementById("resetDayBtn");
-  const resetAllBtn = document.getElementById("resetAllBtn");
-  const progressText = document.getElementById("progressText");
-  const progressDotInner = document.getElementById("progressDotInner");
-
-  const screens = Array.from(document.querySelectorAll(".screen"));
-  const navButtons = Array.from(document.querySelectorAll(".nav-btn"));
-  const fieldElements = Array.from(document.querySelectorAll("[data-field]"));
-
-  const dailyChartCanvas = document.getElementById("dailyChart");
-  const categoryChartCanvas = document.getElementById("categoryChart");
-  const dailyChartMeta = document.getElementById("dailyChartMeta");
-  const categoryChartMeta = document.getElementById("categoryChartMeta");
-
-  let dailyChart = null;
-  let categoryChart = null;
-
-  const CATEGORY_CONFIG = [
-    { key: "chuli", label: "出離心" },
-    { key: "putixin", label: "菩提心" },
-    { key: "shen", label: "身" },
-    { key: "yu", label: "語" },
-    { key: "yi", label: "意" },
-    { key: "xiazuo", label: "下座" },
-  ];
-
-  // 初始化 Day 選單
-  for (let i = 1; i <= TOTAL_DAYS; i++) {
-    const opt = document.createElement("option");
-    opt.value = String(i);
-    opt.textContent = `Day ${i}`;
-    daySelect.appendChild(opt);
-  }
-
-  function loadAllData() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) {
-      console.warn("讀取資料失敗，將重新初始化。", e);
-      return {};
-    }
-  }
-
-  function saveAllData(data) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }
-
-  function getCurrentDay() {
-    return parseInt(daySelect.value, 10);
-  }
-
-  function setCurrentDay(day) {
-    if (day < 1) day = 1;
-    if (day > TOTAL_DAYS) day = TOTAL_DAYS;
-    daySelect.value = String(day);
-    localStorage.setItem(LAST_DAY_KEY, String(day));
-    renderDayInfo();
-    loadDayToForm(day);
-    updateProgressAndSummary();
-    updateCharts();
-  }
-
-  function renderDayInfo() {
-    const day = getCurrentDay();
-    dayInfo.textContent = `第 ${day} 天／共 ${TOTAL_DAYS} 天`;
-  }
-
-  function loadDayToForm(day) {
-    const data = loadAllData();
-    const dayKey = "day_" + day;
-    const dayData = data[dayKey] || {};
-
-    fieldElements.forEach((el) => {
-      const key = el.dataset.field;
-      const value = dayData[key];
-
-      if (el.type === "checkbox") {
-        el.checked = Boolean(value);
-      } else if (el.tagName === "TEXTAREA" || el.type === "text" || el.type === "number") {
-        el.value = value != null ? value : "";
+    // 六大項設定：勾選任務、數字任務、自填欄位
+    const CATEGORIES = [
+      {
+        key: 'leaving',
+        name: '出離心',
+        desc: '每日思維無常、皆苦。',
+        icon: 'lotus',
+        checkboxTasks: [
+          '每日思維「無常」六次',
+          '每日思維「一切皆苦」六次'
+        ],
+        numberTasks: [],
+        textLabel: '自行填寫：今天對「出離心」有什麼體會或紀錄？'
+      },
+      {
+        key: 'bodhi',
+        name: '菩提心',
+        desc: '記得眾生仍在輪迴。',
+        icon: 'heart',
+        checkboxTasks: [
+          '每日思維「六道父母仍在輪迴」六次',
+          '每日思維「等待救援的眾生仍在輪迴」六次'
+        ],
+        numberTasks: [],
+        textLabel: '自行填寫：今天為眾生發了什麼願？'
+      },
+      {
+        key: 'body',
+        name: '身',
+        desc: '運動・飲食・作息・曬太陽。',
+        icon: 'body',
+        checkboxTasks: [
+          '運動',
+          '飲食',
+          '作息',
+          '曬太陽 10～15 分鐘'
+        ],
+        numberTasks: [],
+        textLabel: '自行填寫：今天身體照顧得如何？'
+      },
+      {
+        key: 'speech',
+        name: '語',
+        desc: '淨化語言與呼吸覺知。',
+        icon: 'speech',
+        checkboxTasks: [],
+        numberTasks: [
+          { field: 'purifyTimes', label: '加強五大淨化法', unit: '次' },
+          { field: 'anapanaMinutes', label: '加強安那般那', unit: '分鐘' }
+        ],
+        textLabel: '自行填寫：今天在「語」上有什麼觀察或練習？'
+      },
+      {
+        key: 'mind',
+        name: '意',
+        desc: '定與慧的累積。',
+        icon: 'mind',
+        checkboxTasks: [],
+        numberTasks: [
+          { field: 'sitHours', label: '定：今日共上座', unit: '小時' },
+          { field: 'sitTimes', label: '定：今日共上座', unit: '次' }
+        ],
+        textLabel: '慧：複習知見或是有新發現？請寫下來。'
+      },
+      {
+        key: 'offseat',
+        name: '下座',
+        desc: '生活中保持正念。',
+        icon: 'seat',
+        checkboxTasks: [
+          '每日用手機打發的時間低於 1 小時',
+          '專心工作'
+        ],
+        numberTasks: [],
+        textLabel: '自行填寫：今天下座時，如何把修行帶入生活？'
       }
-    });
-  }
-
-  function collectFormToDayData() {
-    const result = {};
-    fieldElements.forEach((el) => {
-      const key = el.dataset.field;
-      if (el.type === "checkbox") {
-        result[key] = el.checked;
-      } else {
-        result[key] = el.value;
-      }
-    });
-    return result;
-  }
-
-  function saveCurrentDay() {
-    const day = getCurrentDay();
-    const data = loadAllData();
-    const dayKey = "day_" + day;
-    data[dayKey] = collectFormToDayData();
-    saveAllData(data);
-    updateProgressAndSummary();
-    updateCharts();
-  }
-
-  function isCategoryDoneFromDOM(prefix) {
-    const checkboxes = document.querySelectorAll(
-      `input[type="checkbox"][data-field^="${prefix}_"]`
-    );
-    for (const cb of checkboxes) {
-      if (cb.checked) return true;
-    }
-    return false;
-  }
-
-  function updateProgressAndSummary() {
-    const summaryItems = CATEGORY_CONFIG.map((cfg) => {
-      return {
-        key: cfg.key,
-        label: cfg.label,
-        done: isCategoryDoneFromDOM(cfg.key),
-      };
-    });
-
-    const completedCount = summaryItems.filter((s) => s.done).length;
-    const percent = Math.round((completedCount / CATEGORY_CONFIG.length) * 100);
-
-    // 更新頂部完成度
-    progressText.textContent = `${completedCount} / ${CATEGORY_CONFIG.length}（${percent}%）`;
-    progressDotInner.style.transform = `scaleX(${completedCount / CATEGORY_CONFIG.length})`;
-
-    // 更新今日總覽列表
-    summaryItems.forEach((item) => {
-      const li = document.querySelector(`.summary-item[data-summary="${item.key}"]`);
-      if (!li) return;
-      li.classList.toggle("done", item.done);
-      const statusEl = li.querySelector(".summary-item-status");
-      if (statusEl) {
-        statusEl.textContent = item.done ? "已完成" : "未完成";
-      }
-    });
-  }
-
-  function resetCurrentDay() {
-    if (!confirm("確定要清除本日所有紀錄嗎？（無法復原）")) return;
-    const day = getCurrentDay();
-    const data = loadAllData();
-    const dayKey = "day_" + day;
-    delete data[dayKey];
-    saveAllData(data);
-    loadDayToForm(day);
-    updateProgressAndSummary();
-    updateCharts();
-  }
-
-  function resetAllDays() {
-    if (!confirm("⚠️ 這會刪除全部 100 天的紀錄。\n建議先匯出 JSON 或 CSV 備份。\n\n仍要繼續嗎？")) {
-      return;
-    }
-    localStorage.removeItem(STORAGE_KEY);
-    const day = getCurrentDay();
-    loadDayToForm(day);
-    updateProgressAndSummary();
-    updateCharts();
-  }
-
-  function exportJSON() {
-    const data = loadAllData();
-    const payload = {
-      version: 3,
-      totalDays: TOTAL_DAYS,
-      exportedAt: new Date().toISOString(),
-      data,
-    };
-    const jsonStr = JSON.stringify(payload, null, 2);
-    downloadFile(jsonStr, "application/json", `hundred-days-backup-${getDateStamp()}.json`);
-  }
-
-  function isCategoryDoneFromDayData(dayData, prefix) {
-    if (!dayData) return false;
-    return Object.keys(dayData).some((key) => {
-      return key.startsWith(prefix + "_") && key.endsWith("_chk") && !!dayData[key];
-    });
-  }
-
-  function exportCSV() {
-    const data = loadAllData();
-
-    // 取得所有欄位名稱
-    const fieldKeys = Array.from(
-      new Set(fieldElements.map((el) => el.dataset.field))
-    );
-
-    const header = [
-      "day",
-      "done_chuli",
-      "done_putixin",
-      "done_shen",
-      "done_yu",
-      "done_yi",
-      "done_xiazuo",
-      "completed_count",
-      "completed_percent",
-      ...fieldKeys
     ];
 
-    const rows = [];
-    rows.push(header.join(","));
+    // ===== 狀態處理 =====
+    let state = loadState();
+    let currentDay = 1;
+    let currentCategoryKey = null;
 
-    for (let day = 1; day <= TOTAL_DAYS; day++) {
-      const dayKey = "day_" + day;
-      const dayData = data[dayKey] || {};
+    const dayNumberEl = document.getElementById('dayNumber');
+    const todayDoneEl = document.getElementById('todayDone');
+    const streakDaysEl = document.getElementById('streakDays');
+    const fullCompleteNoteEl = document.getElementById('fullCompleteNote');
+    const categoryListEl = document.getElementById('categoryList');
+    const prevDayBtn = document.getElementById('prevDayBtn');
+    const nextDayBtn = document.getElementById('nextDayBtn');
+    const resetDayBtn = document.getElementById('resetDayBtn');
 
-      const doneFlags = CATEGORY_CONFIG.map((cfg) =>
-        isCategoryDoneFromDayData(dayData, cfg.key)
-      );
-      const completedCount = doneFlags.filter(Boolean).length;
-      const completedPercent = Math.round(
-        (completedCount / CATEGORY_CONFIG.length) * 100
-      );
+    const detailPanel = document.getElementById('detailPanel');
+    const detailTitleEl = document.getElementById('detailTitle');
+    const tasksListEl = document.getElementById('tasksList');
+    const closePanelBtn = document.getElementById('closePanelBtn');
+    const saveTasksBtn = document.getElementById('saveTasksBtn');
 
-      const row = [
-        day,
-        doneFlags[0] ? 1 : 0,
-        doneFlags[1] ? 1 : 0,
-        doneFlags[2] ? 1 : 0,
-        doneFlags[3] ? 1 : 0,
-        doneFlags[4] ? 1 : 0,
-        doneFlags[5] ? 1 : 0,
-        completedCount,
-        completedPercent,
-        ...fieldKeys.map((key) => {
-          const value = dayData[key];
-          if (typeof value === "boolean") {
-            return value ? "1" : "";
-          }
-          return value == null ? "" : String(value);
-        })
-      ];
+    const toastEl = document.getElementById('toast');
+    const daySummaryEl = document.getElementById('daySummary');
 
-      rows.push(row.map(toCsvValue).join(","));
-    }
-
-    const csvStr = rows.join("\r\n");
-    downloadFile(csvStr, "text/csv", `hundred-days-records-${getDateStamp()}.csv`);
-  }
-
-  function toCsvValue(value) {
-    const s = String(value ?? "");
-    if (/[",\n]/.test(s)) {
-      return '"' + s.replace(/"/g, '""') + '"';
-    }
-    return s;
-  }
-
-  function getDateStamp() {
-    const d = new Date();
-    const pad = (n) => String(n).padStart(2, "0");
-    return (
-      d.getFullYear() +
-      pad(d.getMonth() + 1) +
-      pad(d.getDate()) +
-      "-" +
-      pad(d.getHours()) +
-      pad(d.getMinutes())
-    );
-  }
-
-  function downloadFile(content, mimeType, filename) {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
-  // ---- 圖表相關 ----
-  function safeHasData(obj) {
-    return obj && Object.keys(obj).length > 0;
-  }
-
-  function computeDailyAndCategoryStats() {
-    const data = loadAllData();
-    const dailyScores = [];
-    const categoryDoneCounts = {};
-    const categoryHasAnyData = {};
-    CATEGORY_CONFIG.forEach((cfg) => {
-      categoryDoneCounts[cfg.key] = 0;
-      categoryHasAnyData[cfg.key] = false;
-    });
-
-    let daysWithAnyData = 0;
-
-    for (let day = 1; day <= TOTAL_DAYS; day++) {
-      const dayKey = "day_" + day;
-      const dayData = data[dayKey];
-      const hasData = safeHasData(dayData || {});
-      if (hasData) daysWithAnyData++;
-
-      let completedThisDay = 0;
-      CATEGORY_CONFIG.forEach((cfg) => {
-        const done = isCategoryDoneFromDayData(dayData, cfg.key);
-        if (done) {
-          completedThisDay++;
-          categoryDoneCounts[cfg.key] += 1;
-        }
-        if (hasData) {
-          categoryHasAnyData[cfg.key] = true;
-        }
-      });
-      dailyScores.push(completedThisDay);
-    }
-
-    const categoryRates = CATEGORY_CONFIG.map((cfg) => {
-      const hasData = categoryHasAnyData[cfg.key];
-      const denom = daysWithAnyData || TOTAL_DAYS;
-      const rate = denom === 0 ? 0 : Math.round((categoryDoneCounts[cfg.key] / denom) * 100);
+    function defaultTaskState(cat){
       return {
-        key: cfg.key,
-        label: cfg.label,
-        count: categoryDoneCounts[cfg.key],
-        rate,
-        hasData,
+        checkboxes: new Array(cat.checkboxTasks.length).fill(false),
+        numbers: cat.numberTasks.reduce((obj, n)=>{
+          obj[n.field] = '';
+          return obj;
+        },{}),
+        text: ''
       };
-    });
+    }
 
-    return {
-      dailyScores,
-      daysWithAnyData,
-      categoryRates,
-    };
-  }
-
-  function updateCharts() {
-    if (!window.Chart || !dailyChartCanvas || !categoryChartCanvas) return;
-
-    const { dailyScores, daysWithAnyData, categoryRates } = computeDailyAndCategoryStats();
-
-    const labels = Array.from({ length: TOTAL_DAYS }, (_, i) => i + 1);
-
-    // 每日完成度折線圖
-    if (!dailyChart) {
-      dailyChart = new Chart(dailyChartCanvas.getContext("2d"), {
-        type: "line",
-        data: {
-          labels,
-          datasets: [{
-            label: "完成項目數",
-            data: dailyScores,
-            borderColor: "#4455aa",
-            backgroundColor: "rgba(68,85,170,0.10)",
-            tension: 0.25,
-            pointRadius: 0,
-            borderWidth: 2,
-            fill: true,
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: {
-              ticks: {
-                maxTicksLimit: 8,
-                color: "#8a8faf",
-                callback: (value, index) => {
-                  const d = labels[index];
-                  return d === 1 || d % 10 === 0 ? "Day " + d : "";
+    function loadState(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(raw){
+          const parsed = JSON.parse(raw);
+          if(parsed && parsed.days){
+            // 確保結構完整
+            CATEGORIES.forEach(cat=>{
+              for(let d=1; d<=100; d++){
+                if(!parsed.days[d]) parsed.days[d] = {tasks:{}, summary:'', userEditedSummary:false};
+                if(!parsed.days[d].tasks) parsed.days[d].tasks = {};
+                const t = parsed.days[d].tasks[cat.key];
+                if(!t){
+                  parsed.days[d].tasks[cat.key] = defaultTaskState(cat);
+                }else if(Array.isArray(t)){
+                  parsed.days[d].tasks[cat.key] = {
+                    checkboxes: t,
+                    numbers: cat.numberTasks.reduce((obj,n)=>{obj[n.field]='';return obj;},{}),
+                    text:''
+                  };
+                }else{
+                  if(!Array.isArray(t.checkboxes)){
+                    t.checkboxes = new Array(cat.checkboxTasks.length).fill(false);
+                  }else if(t.checkboxes.length < cat.checkboxTasks.length){
+                    while(t.checkboxes.length < cat.checkboxTasks.length){
+                      t.checkboxes.push(false);
+                    }
+                  }
+                  if(!t.numbers) t.numbers = {};
+                  cat.numberTasks.forEach(n=>{
+                    if(typeof t.numbers[n.field] === 'undefined') t.numbers[n.field] = '';
+                  });
+                  if(typeof t.text !== 'string') t.text = '';
                 }
-              },
-              grid: {
-                display: false
               }
-            },
-            y: {
-              min: 0,
-              max: 6,
-              ticks: {
-                stepSize: 1,
-                color: "#8a8faf",
-              },
-              grid: {
-                color: "rgba(170,178,220,0.25)",
-                borderDash: [4, 4]
+            });
+
+            // 版本升級：補 userEditedSummary，並重新產生摘要一次（只要使用者沒編輯過）
+            if(!parsed.version || parsed.version < 3){
+              for(let d=1; d<=100; d++){
+                if(typeof parsed.days[d].userEditedSummary === 'undefined'){
+                  parsed.days[d].userEditedSummary = false;
+                }
+                if(!parsed.days[d].userEditedSummary){
+                  parsed.days[d].summary = generateSummaryForDayFromState(parsed, d);
+                }
               }
+              parsed.version = 3;
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
             }
-          },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                title: (items) => {
-                  const idx = items[0].dataIndex + 1;
-                  return "Day " + idx;
-                },
-                label: (item) => `完成 ${item.parsed.y} / 6 項`
-              }
-            }
+
+            return parsed;
           }
         }
-      });
-    } else {
-      dailyChart.data.labels = labels;
-      dailyChart.data.datasets[0].data = dailyScores;
-      dailyChart.update();
-    }
-
-    // 每日圖表下方文字摘要
-    if (dailyChartMeta) {
-      const totalSum = dailyScores.reduce((sum, v) => sum + v, 0);
-      const avg = (dailyScores.length > 0) ? (totalSum / dailyScores.length).toFixed(2) : "0.00";
-      const recent30 = dailyScores.slice(-30);
-      const recentAvg = recent30.length
-        ? (recent30.reduce((a, b) => a + b, 0) / recent30.length).toFixed(2)
-        : "-";
-
-      dailyChartMeta.innerHTML = `
-        <span>已填寫天數：<strong>${daysWithAnyData}</strong> / ${TOTAL_DAYS}</span>
-        <span>全期日均完成：<strong>${avg}</strong> 項 / 6</span>
-        <span>最近 30 天平均：<strong>${recentAvg}</strong> 項 / 6</span>
-      `;
-    }
-
-    // 六大項完成率長條圖
-    const catLabels = categoryRates.map((c) => c.label);
-    const catData = categoryRates.map((c) => c.rate);
-
-    if (!categoryChart) {
-      categoryChart = new Chart(categoryChartCanvas.getContext("2d"), {
-        type: "bar",
-        data: {
-          labels: catLabels,
-          datasets: [{
-            label: "完成率%",
-            data: catData,
-            backgroundColor: "rgba(68,85,170,0.20)",
-            borderColor: "#4455aa",
-            borderWidth: 1.5,
-            borderRadius: 8,
-            maxBarThickness: 42,
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: {
-              ticks: {
-                color: "#8a8faf"
-              },
-              grid: {
-                display: false
-              }
-            },
-            y: {
-              min: 0,
-              max: 100,
-              ticks: {
-                stepSize: 20,
-                color: "#8a8faf",
-                callback: (value) => value + "%"
-              },
-              grid: {
-                color: "rgba(170,178,220,0.25)",
-                borderDash: [4, 4]
-              }
-            }
-          },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: (item) => `${item.parsed.y}% 完成率`
-              }
-            }
-          }
-        }
-      });
-    } else {
-      categoryChart.data.labels = catLabels;
-      categoryChart.data.datasets[0].data = catData;
-      categoryChart.update();
-    }
-
-    if (categoryChartMeta) {
-      const best = [...categoryRates].sort((a, b) => b.rate - a.rate)[0];
-      const worst = [...categoryRates].sort((a, b) => a.rate - b.rate)[0];
-
-      categoryChartMeta.innerHTML = `
-        <span>統計基準天數：<strong>${daysWithAnyData || 0}</strong> 天</span>
-        <span>目前最穩定：<strong>${best ? `${best.label}（${best.rate}%）` : "-"}</strong></span>
-        <span>可以加強：<strong>${worst ? `${worst.label}（${worst.rate}%）` : "-"}</strong></span>
-      `;
-    }
-  }
-
-  // 事件綁定：Day 切換
-  daySelect.addEventListener("change", () => {
-    setCurrentDay(getCurrentDay());
-  });
-
-  prevBtn.addEventListener("click", () => {
-    setCurrentDay(getCurrentDay() - 1);
-  });
-
-  nextBtn.addEventListener("click", () => {
-    setCurrentDay(getCurrentDay() + 1);
-  });
-
-  // 所有欄位改變就自動儲存
-  fieldElements.forEach((el) => {
-    el.addEventListener("change", saveCurrentDay);
-    if (el.tagName === "TEXTAREA" || el.type === "text" || el.type === "number") {
-      el.addEventListener("blur", saveCurrentDay);
-    }
-  });
-
-  // 匯出與重置
-  exportJsonBtn.addEventListener("click", exportJSON);
-  exportCsvBtn.addEventListener("click", exportCSV);
-  resetDayBtn.addEventListener("click", resetCurrentDay);
-  resetAllBtn.addEventListener("click", resetAllDays);
-
-  // 底部導覽切換
-  navButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const target = btn.dataset.target;
-      // 更新按鈕狀態
-      navButtons.forEach((b) => b.classList.toggle("active", b === btn));
-      // 更新畫面
-      screens.forEach((screen) => {
-        const screenName = screen.getAttribute("data-screen");
-        screen.classList.toggle("active", screenName === target);
-      });
-      // 捲到最上方
-      const mainEl = document.querySelector(".app-main");
-      if (mainEl && mainEl.scrollTo) {
-        mainEl.scrollTo({ top: 0, behavior: "auto" });
-      } else if (mainEl) {
-        mainEl.scrollTop = 0;
-      }
-
-      if (target === "charts") {
-        // 切換到圖表頁時更新一次
-        updateCharts();
-      }
-    });
-  });
-
-  // 初始化目前天數
-  const lastDay = parseInt(localStorage.getItem(LAST_DAY_KEY) || "1", 10);
-  setCurrentDay(lastDay >= 1 && lastDay <= TOTAL_DAYS ? lastDay : 1);
-})();
-</script>
-
-<script>
-  // PWA Service Worker 註冊
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", function () {
-      navigator.serviceWorker
-        .register("service-worker.js")
-        .catch(function (err) {
-          console.log("ServiceWorker 註冊失敗：", err);
+      }catch(e){}
+      // init new state
+      const days = {};
+      for(let d=1; d<=100; d++){
+        days[d] = { tasks:{}, summary:'', userEditedSummary:false };
+        CATEGORIES.forEach(cat=>{
+          days[d].tasks[cat.key] = defaultTaskState(cat);
         });
+      }
+      return { days, version:3 };
+    }
+
+    function saveState(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function getDayCatState(day, catKey){
+      const dayData = state.days[day];
+      if(!dayData.tasks[catKey]){
+        const cat = CATEGORIES.find(c=>c.key===catKey);
+        dayData.tasks[catKey] = defaultTaskState(cat);
+      }
+      return dayData.tasks[catKey];
+    }
+
+    function setCurrentDay(day){
+      if(day<1) day = 1;
+      if(day>100) day = 100;
+      currentDay = day;
+      dayNumberEl.textContent = day;
+      renderCategories();
+      renderSummary();
+      regenerateSummaryForDay(day); // 保證顯示最新狀態（若沒手動改過）
+      renderDaySummary();
+    }
+
+    function isCategoryDone(day, key){
+      const cat = CATEGORIES.find(c=>c.key===key);
+      const t = getDayCatState(day, key);
+      if(cat.checkboxTasks.length){
+        if(!t.checkboxes || t.checkboxes.length < cat.checkboxTasks.length) return false;
+        if(!t.checkboxes.every(v=>v)) return false;
+      }
+      if(cat.numberTasks.length){
+        for(const n of cat.numberTasks){
+          const v = (t.numbers && t.numbers[n.field]) || '';
+          if(String(v).trim()==='') return false;
+        }
+      }
+      if(!t.text || t.text.trim()==='') return false;
+      return true;
+    }
+
+    function getDayDoneCount(day){
+      let count = 0;
+      CATEGORIES.forEach(cat=>{
+        if(isCategoryDone(day, cat.key)) count++;
+      });
+      return count;
+    }
+
+    function computeStreak(){
+      let streak = 0;
+      for(let d=1; d<=100; d++){
+        if(getDayDoneCount(d) === CATEGORIES.length){
+          streak++;
+        }else{
+          break;
+        }
+      }
+      return streak;
+    }
+
+    // ===== UI Rendering =====
+    function createIconSVG(type){
+      switch(type){
+        case 'lotus':
+          return `
+          <svg class="icon" viewBox="0 0 64 64">
+            <path d="M32 46 C20 44 14 36 12 28 C16 30 20 32 23 32 C22 26 24 20 28 16 C30 20 31.5 24 32 28 C32.5 24 34 20 36 16 C40 20 42 26 41 32 C44 32 48 30 52 28 C50 36 44 44 32 46 Z" />
+          </svg>`;
+        case 'heart':
+          return `
+          <svg class="icon" viewBox="0 0 64 64">
+            <path d="M32 48 L18 34 C14 30 12 24 14 19 C16 15 20 13 24 13 C28 13 31 15 32 17 C33 15 36 13 40 13 C44 13 48 15 50 19 C52 24 50 30 46 34 Z" />
+          </svg>`;
+        case 'body':
+          return `
+          <svg class="icon" viewBox="0 0 64 64">
+            <circle cx="32" cy="16" r="6" />
+            <path d="M26 28 L24 40 L20 50 M38 28 L40 40 L44 50 M26 30 C29 28 35 28 38 30 M28 50 L28 40 L36 40 L36 50" />
+          </svg>`;
+        case 'speech':
+          return `
+          <svg class="icon" viewBox="0 0 64 64">
+            <path d="M14 20 H50 V38 H30 L22 46 V38 H14 Z" />
+            <circle cx="24" cy="28" r="2" />
+            <circle cx="32" cy="28" r="2" />
+            <circle cx="40" cy="28" r="2" />
+          </svg>`;
+        case 'mind':
+          return `
+          <svg class="icon" viewBox="0 0 64 64">
+            <path d="M24 46 V38 H20 C16 34 16 26 20 22 C24 18 32 18 36 18 C42 18 48 22 48 30 C48 36 44 40 40 42 V46 Z" />
+            <circle cx="32" cy="28" r="3" />
+          </svg>`;
+        case 'seat':
+          return `
+          <svg class="icon" viewBox="0 0 64 64">
+            <rect x="18" y="26" width="28" height="10" rx="3" />
+            <rect x="20" y="18" width="8" height="8" rx="2" />
+            <rect x="36" y="18" width="8" height="8" rx="2" />
+            <path d="M22 36 V46 M42 36 V46" />
+          </svg>`;
+        default:
+          return '';
+      }
+    }
+
+    function renderCategories(){
+      categoryListEl.innerHTML = '';
+      CATEGORIES.forEach(cat=>{
+        const card = document.createElement('button');
+        card.className = 'category-card';
+        card.type = 'button';
+        card.dataset.key = cat.key;
+
+        if(isCategoryDone(currentDay, cat.key)){
+          card.classList.add('done');
+        }
+
+        card.innerHTML = `
+          <div class="icon-wrap">
+            ${createIconSVG(cat.icon)}
+          </div>
+          <div class="category-text">
+            <div class="category-title">${cat.name}</div>
+            <div class="category-desc">${cat.desc}</div>
+          </div>
+          <div class="status-dot">
+            <div class="status-dot-inner"></div>
+          </div>
+        `;
+
+        card.addEventListener('click', ()=>{
+          openDetail(cat.key);
+        });
+
+        categoryListEl.appendChild(card);
+      });
+    }
+
+    function renderSummary(){
+      const done = getDayDoneCount(currentDay);
+      todayDoneEl.textContent = done;
+      const allDone = (done === CATEGORIES.length);
+      fullCompleteNoteEl.style.display = allDone ? 'block' : 'none';
+      streakDaysEl.textContent = computeStreak();
+    }
+
+    /* -------------------------------------------
+   🔸 詳細任務面板：打開（修正 innerHTML → createElement）
+-------------------------------------------- */
+function openDetail(categoryKey){
+  currentCategoryKey = categoryKey;
+  const cat = CATEGORIES.find(c=>c.key===categoryKey);
+  const t = state.days[currentDay].tasks[categoryKey];
+
+  detailTitleEl.textContent = cat.name;
+  tasksListEl.innerHTML = "";
+
+  /* --------------------------
+     ✔ checkbox 任務（修正版）
+  -------------------------- */
+  cat.checkboxTasks.forEach((text, idx)=>{
+    const li = document.createElement("li");
+    const id = `cb-${categoryKey}-${idx}`;
+
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.id = id;
+    input.dataset.type = "cb";
+    input.dataset.index = idx;
+    input.checked = !!t.checkboxes[idx];
+
+    const label = document.createElement("label");
+    label.setAttribute("for", id);
+    label.textContent = text;
+
+    li.appendChild(input);
+    li.appendChild(label);
+    tasksListEl.appendChild(li);
+  });
+
+  /* --------------------------
+     ✔ number 任務（修正版）
+  -------------------------- */
+  cat.numberTasks.forEach(n=>{
+    const li = document.createElement("li");
+    const id = `num-${categoryKey}-${n.field}`;
+
+    const spanLabel = document.createElement("span");
+    spanLabel.className = "num-label";
+    spanLabel.textContent = n.label;
+
+    const input = document.createElement("input");
+    input.type = "number";
+    input.id = id;
+    input.dataset.type = "num";
+    input.dataset.field = n.field;
+    input.value = t.numbers[n.field] || "";
+
+    const spanUnit = document.createElement("span");
+    spanUnit.textContent = n.unit;
+
+    li.appendChild(spanLabel);
+    li.appendChild(input);
+    li.appendChild(spanUnit);
+    tasksListEl.appendChild(li);
+  });
+
+      // 自填文字
+      const liText = document.createElement('li');
+      liText.innerHTML = `
+        <span class="num-label">${cat.textLabel}</span>
+      `;
+      const textarea = document.createElement('textarea');
+      textarea.dataset.type = 'text';
+      textarea.value = t.text || '';
+      liText.appendChild(textarea);
+      tasksListEl.appendChild(liText);
+
+      detailPanel.classList.add('show');
+      detailPanel.setAttribute('aria-hidden','false');
+    }
+
+    function closeDetail(){
+      detailPanel.classList.remove('show');
+      detailPanel.setAttribute('aria-hidden','true');
+    }
+
+    function saveDetailTasks(){
+      if(!currentCategoryKey) return;
+      const cat = CATEGORIES.find(c=>c.key === currentCategoryKey);
+      const dayData = state.days[currentDay];
+      if(!cat || !dayData) return;
+
+      const t = getDayCatState(currentDay, currentCategoryKey);
+      const cbs = [];
+      const nums = Object.assign({}, t.numbers);
+      let text = t.text || '';
+
+      const inputs = tasksListEl.querySelectorAll('input, textarea');
+      inputs.forEach(el=>{
+        const type = el.dataset.type;
+        if(type === 'cb'){
+          const idx = Number(el.dataset.index);
+          cbs[idx] = el.checked;
+        }else if(type === 'num'){
+          const field = el.dataset.field;
+          nums[field] = el.value;
+        }else if(type === 'text'){
+          text = el.value;
+        }
+      });
+
+      dayData.tasks[currentCategoryKey] = {
+        checkboxes: cbs.length ? cbs : t.checkboxes,
+        numbers: nums,
+        text
+      };
+
+      saveState();
+      renderCategories();
+      renderSummary();
+      regenerateSummaryForDay(currentDay); // ⭐ 每次儲存後都重新產生摘要（若使用者沒自行改過）
+      renderDaySummary();
+      showToast(`已儲存 Day ${currentDay}・${cat.name}`);
+    }
+
+    // ===== 今日摘要：產生 / 更新 =====
+    function generateSummaryForDayFromState(st, day){
+      const lines = [];
+      const doneCount = (()=> {
+        let c = 0;
+        CATEGORIES.forEach(cat=>{
+          const data = st.days[day];
+          if(!data) return;
+          const t = data.tasks[cat.key];
+          if(!t) return;
+          let ok = true;
+          if(cat.checkboxTasks.length){
+            if(!t.checkboxes || t.checkboxes.length < cat.checkboxTasks.length) ok=false;
+            else if(!t.checkboxes.every(v=>v)) ok=false;
+          }
+          if(ok && cat.numberTasks.length){
+            for(const n of cat.numberTasks){
+              const v = (t.numbers && t.numbers[n.field]) || '';
+              if(String(v).trim()===''){ ok=false; break; }
+            }
+          }
+          if(ok && (!t.text || t.text.trim()==='')) ok=false;
+          if(ok) c++;
+        });
+        return c;
+      })();
+
+      lines.push(`Day ${day} 百日築基紀錄`);
+      lines.push(`今日完成進度：${doneCount} / 6`);
+      lines.push('');
+
+      CATEGORIES.forEach(cat=>{
+        const dayData = st.days[day];
+        const t = dayData && dayData.tasks[cat.key];
+        const part = [];
+
+        if(t){
+          // checkbox
+          cat.checkboxTasks.forEach((txt, idx)=>{
+            if(t.checkboxes && t.checkboxes[idx]) part.push(txt);
+          });
+
+          // numbers
+          cat.numberTasks.forEach(n=>{
+            const v = (t.numbers && t.numbers[n.field]) || '';
+            if(String(v).trim() !== ''){
+              if(cat.key === 'mind' && (n.field === 'sitHours' || n.field === 'sitTimes')){
+                // mind 的兩個數字在下面一起輸出
+              }else{
+                part.push(`${n.label} ${v}${n.unit}`);
+              }
+            }
+          });
+
+          if(cat.key === 'mind'){
+            const hours = t.numbers && t.numbers['sitHours'];
+            const times = t.numbers && t.numbers['sitTimes'];
+            if(String(hours||'').trim() !== '' || String(times||'').trim() !== ''){
+              part.push(`定：今日共上座 ${hours||'0'} 小時 / ${times||'0'} 次`);
+            }
+          }
+
+          if(t.text && t.text.trim()!==''){
+            part.push(`心得：${t.text.trim()}`);
+          }
+        }
+
+        if(part.length){
+          lines.push(`【${cat.name}】`);
+          part.forEach(p=>lines.push('・'+p));
+        }else{
+          lines.push(`【${cat.name}】尚未記錄。`);
+        }
+        lines.push('');
+      });
+
+      return lines.join('\n');
+    }
+
+    function generateSummaryForDay(day){
+      return generateSummaryForDayFromState(state, day);
+    }
+
+    // 只要使用者沒有手動改過，就自動重新產生摘要
+    function regenerateSummaryForDay(day){
+      const dayData = state.days[day];
+      if(dayData.userEditedSummary) return; // 使用者手動修改過就尊重他
+      dayData.summary = generateSummaryForDay(day);
+      saveState();
+    }
+
+    function renderDaySummary(){
+      const dayData = state.days[currentDay];
+      if(!dayData.userEditedSummary && (!dayData.summary || dayData.summary.trim()==='')){
+        regenerateSummaryForDay(currentDay);
+      }
+      daySummaryEl.value = dayData.summary || '';
+    }
+
+    // ===== 其他操作 =====
+    function showToast(text){
+      toastEl.textContent = text;
+      toastEl.classList.add('show');
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(()=>{
+        toastEl.classList.remove('show');
+      }, 1500);
+    }
+
+    // ===== 事件綁定 =====
+    prevDayBtn.addEventListener('click', ()=>{
+      setCurrentDay(currentDay-1);
     });
-  }
-</script>
+    nextDayBtn.addEventListener('click', ()=>{
+      setCurrentDay(currentDay+1);
+    });
+
+    resetDayBtn.addEventListener('click', ()=>{
+      if(!confirm(`確定要清除 Day ${currentDay} 的所有紀錄（含摘要）嗎？`)) return;
+      const dayData = state.days[currentDay];
+      CATEGORIES.forEach(cat=>{
+        dayData.tasks[cat.key] = defaultTaskState(cat);
+      });
+      dayData.summary = '';
+      dayData.userEditedSummary = false;
+      regenerateSummaryForDay(currentDay);
+      saveState();
+      renderCategories();
+      renderSummary();
+      renderDaySummary();
+      showToast(`已清除 Day ${currentDay} 的紀錄`);
+    });
+
+    closePanelBtn.addEventListener('click', closeDetail);
+    detailPanel.addEventListener('click', (e)=>{
+      if(e.target === detailPanel) closeDetail();
+    });
+    saveTasksBtn.addEventListener('click', ()=>{
+      saveDetailTasks();
+      closeDetail();
+    });
+
+    // 使用者在摘要中輸入 → 標記為「已手動修改」，之後不再自動覆蓋
+    daySummaryEl.addEventListener('input', ()=>{
+      const dayData = state.days[currentDay];
+      dayData.summary = daySummaryEl.value;
+      dayData.userEditedSummary = true;
+      saveState();
+    });
+
+    // ===== 初始化 =====
+    setCurrentDay(currentDay);
+  </script>
 </body>
 </html>
